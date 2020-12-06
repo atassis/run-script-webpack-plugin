@@ -1,12 +1,14 @@
 # run-script-webpack-plugin
 
+[![npm][npm]][npm-url]
+[![node][node]][node-url]
+[![deps][deps]][deps-url]
+[![licenses][licenses]][licenses-url]
+[![downloads][downloads]][downloads-url]
+[![size][size]][size-url]
 > Automatically start your server once Webpack's build completes.
  
 NOTE: mostly copied from [this](https://github.com/ericclemmons/start-server-webpack-plugin) repo, but strongly typed from scratch
-
-[![version](https://img.shields.io/npm/v/run-script-webpack-plugin.svg)](http://npm.im/run-script-webpack-plugin)
-[![downloads](https://img.shields.io/npm/dm/run-script-webpack-plugin.svg)](http://npm-stat.com/charts.html?package=run-script-webpack-plugin)
-[![MIT License](https://img.shields.io/npm/l/run-script-webpack-plugin.svg)](http://opensource.org/licenses/MIT)
 
 ### Installation
 
@@ -47,3 +49,16 @@ To use Hot Module Reloading with your server code, set Webpack to "hot" mode and
 ### License
 
 > Refer to [LICENSE](LICENSE) file
+
+[npm]: https://img.shields.io/npm/v/run-script-webpack-plugin.svg
+[npm-url]: https://npmjs.com/package/run-script-webpack-plugin
+[node]: https://img.shields.io/node/v/run-script-webpack-plugin.svg
+[node-url]: https://nodejs.org
+[deps]: https://img.shields.io/david/atassis/run-script-webpack-plugin.svg
+[deps-url]: https://david-dm.org/atassis/run-script-webpack-plugin
+[licenses-url]: http://opensource.org/licenses/MIT
+[licenses]: https://img.shields.io/npm/l/run-script-webpack-plugin.svg
+[downloads-url]: https://npmcharts.com/compare/run-script-webpack-plugin?minimal=true
+[downloads]: https://img.shields.io/npm/dm/run-script-webpack-plugin.svg
+[size-url]: https://packagephobia.com/result?p=run-script-webpack-plugin
+[size]: https://packagephobia.com/badge?p=run-script-webpack-plugin
