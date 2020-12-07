@@ -15,7 +15,12 @@
   "keywords": [
     "webpack",
     "plugin",
-    "typescript"
+    "typescript",
+    "server",
+    "start",
+    "watch",
+    "restart",
+    "express"
   ],
   "author": "Taymuraz Kaytmazov <atassikay38@gmail.com> (https://github.com/atassis)",
   "license": "MIT",

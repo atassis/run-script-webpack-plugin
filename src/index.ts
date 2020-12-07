@@ -1,6 +1,6 @@
 import cluster, { ClusterSettings, Worker } from 'cluster';
-import webpack, { Compiler, WebpackPluginInstance } from 'webpack';
-import Compilation = webpack.compilation.Compilation;
+import { compilation, Compiler, WebpackPluginInstance } from 'webpack';
+import Compilation = compilation.Compilation;
 
 export type ProcessKillSignal =
   | 'SIGHUP'
@@ -58,7 +58,7 @@ function getInspectPort(execArgv: string[]): number | void {
   }
   const hostPort = inspectArg.split('=')[1];
   const port = hostPort.includes(':') ? hostPort.split(':')[1] : hostPort;
-  return parseInt(port);
+  return Number.parseInt(port, 10);
 }
 
 function getSignal(signal: ProcessKillSignal | boolean) {

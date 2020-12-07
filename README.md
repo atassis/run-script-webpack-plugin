@@ -6,7 +6,7 @@
 [![licenses][licenses]][licenses-url]
 [![downloads][downloads]][downloads-url]
 [![size][size]][size-url]
-> Automatically start your server once Webpack's build completes.
+> Automatically run your script once Webpack's build completes.
  
 NOTE: mostly copied from [this](https://github.com/ericclemmons/start-server-webpack-plugin) repo, but strongly typed from scratch
 
