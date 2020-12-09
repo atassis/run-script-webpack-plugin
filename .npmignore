@@ -1,6 +1,6 @@
 node_modules
 src
-.eslintrc.js
+.eslintrc.json
 .prettierrc
 tsconfig.json
 .idea
