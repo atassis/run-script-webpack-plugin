@@ -1,6 +1,5 @@
-import cluster, { ClusterSettings, Worker } from 'cluster';
-import { compilation, Compiler, WebpackPluginInstance } from 'webpack';
-import Compilation = compilation.Compilation;
+import { Compilation, Compiler, WebpackPluginInstance } from 'webpack';
+import { fork, ChildProcess } from 'child_process';
 
 export type ProcessKillSignal =
   | 'SIGHUP'
@@ -51,16 +50,6 @@ export type RunScriptWebpackPluginOptions = {
   restartable?: boolean;
 };
 
-function getInspectPort(execArgv: string[]): number | void {
-  const inspectArg = execArgv.find((arg) => arg.includes('--inspect'));
-  if (!inspectArg || !inspectArg.includes('=')) {
-    return;
-  }
-  const hostPort = inspectArg.split('=')[1];
-  const port = hostPort.includes(':') ? hostPort.split(':')[1] : hostPort;
-  return Number.parseInt(port, 10);
-}
-
 function getSignal(signal: ProcessKillSignal | boolean) {
   // allow users to disable sending a signal by setting to `false`...
   if (signal === false) return;
@@ -71,7 +60,7 @@ function getSignal(signal: ProcessKillSignal | boolean) {
 class RunScriptWebpackPlugin implements WebpackPluginInstance {
   private readonly options: RunScriptWebpackPluginOptions;
 
-  private worker?: Worker;
+  private worker?: ChildProcess;
 
   private _entrypoint?: string;
 
@@ -97,7 +86,7 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
         if (data.trim() === 'rs') {
           console.log('Restarting app...');
           if (this.worker) {
-            process.kill(this.worker.process.pid);
+            process.kill(this.worker.pid);
           }
           this._startServer((worker) => {
             this.worker = worker;
@@ -108,24 +97,24 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
   }
 
   private afterEmit = (compilation: Compilation, cb: () => void): void => {
-    if (this.worker && this.worker.isConnected()) {
+    if (this.worker && this.worker.connected) {
       const signal = getSignal(this.options.signal);
       if (signal) {
-        process.kill(this.worker.process.pid, signal);
+        process.kill(this.worker.pid, signal);
       }
       cb();
       return;
     }
 
     this.startServer(compilation, cb);
-  }
+  };
 
   apply = (compiler: Compiler): void => {
     compiler.hooks.afterEmit.tapAsync(
       { name: 'RunScriptPlugin' },
-      this.afterEmit,
+      this.afterEmit
     );
-  }
+  };
 
   private startServer = (compilation: Compilation, cb: () => void): void => {
     const { assets, compiler } = compilation;
@@ -136,7 +125,7 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
       name = options.name;
       if (!assets[name]) {
         console.error(
-          `Entry ${name} not found. Try one of: ${names.join(' ')}`,
+          `Entry ${name} not found. Try one of: ${names.join(' ')}`
         );
       }
     } else {
@@ -144,8 +133,8 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
       if (names.length > 1) {
         console.log(
           `More than one entry built, selected ${name}. All names: ${names.join(
-            ' ',
-          )}`,
+            ' '
+          )}`
         );
       }
     }
@@ -158,28 +147,17 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
       this.worker = worker;
       cb();
     });
-  }
+  };
 
-  private _startServer(cb: (arg0: Worker) => void): void {
+  private _startServer(cb: (arg0: ChildProcess) => void): void {
     const { args, nodeArgs } = this.options;
-    const inspectPort = getInspectPort(nodeArgs);
+    if (!this._entrypoint) throw new Error('run-script-webpack-plugin requires an entrypoint.');
 
-    const clusterOptions: ClusterSettings = {
-      exec: this._entrypoint,
+    const child = fork(this._entrypoint, args, {
       execArgv: nodeArgs,
-      args,
-    };
-
-    if (inspectPort) {
-      clusterOptions.inspectPort = inspectPort;
-    }
-    cluster.setupMaster(clusterOptions);
-
-    cluster.on('online', (worker) => {
-      cb(worker);
+      stdio: 'inherit',
     });
-
-    cluster.fork();
+    setTimeout(() => cb(child), 0);
   }
 }
 
