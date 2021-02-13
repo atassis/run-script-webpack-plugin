@@ -1,5 +1,5 @@
 import { Compilation, Compiler, WebpackPluginInstance } from 'webpack';
-import execa from 'execa';
+import { fork, ChildProcess } from 'child_process';
 
 export type ProcessKillSignal =
   | 'SIGHUP'
@@ -60,7 +60,7 @@ function getSignal(signal: ProcessKillSignal | boolean) {
 class RunScriptWebpackPlugin implements WebpackPluginInstance {
   private readonly options: RunScriptWebpackPluginOptions;
 
-  private worker?: execa.ExecaChildProcess;
+  private worker?: ChildProcess;
 
   private _entrypoint?: string;
 
@@ -149,11 +149,14 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
     });
   };
 
-  private _startServer(cb: (arg0: execa.ExecaChildProcess) => void): void {
+  private _startServer(cb: (arg0: ChildProcess) => void): void {
     const { args, nodeArgs } = this.options;
     if (!this._entrypoint) throw new Error('run-script-webpack-plugin requires an entrypoint.');
 
-    const child = execa.node(this._entrypoint, [...args, ...nodeArgs], {stdout: 'inherit', stderr: 'inherit'});
+    const child = fork(this._entrypoint, args, {
+      execArgv: nodeArgs,
+      stdio: 'inherit',
+    });
     setTimeout(() => cb(child), 0);
   }
 }
