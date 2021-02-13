@@ -9,7 +9,8 @@
   },
   "scripts": {
     "prepare": "tsc",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "eslint src"
   },
   "repository": {
     "type": "git",
