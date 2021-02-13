@@ -1,5 +1,6 @@
-import { Compilation, Compiler, WebpackPluginInstance } from 'webpack';
+import { compilation, Compiler, WebpackPluginInstance } from 'webpack';
 import { fork, ChildProcess } from 'child_process';
+import Compilation = compilation.Compilation;
 
 export type ProcessKillSignal =
   | 'SIGHUP'
