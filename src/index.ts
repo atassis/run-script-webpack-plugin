@@ -47,6 +47,7 @@ export type RunScriptWebpackPluginOptions = {
   args: string[];
   signal: boolean | ProcessKillSignal;
   keyboard: boolean;
+  cwd?: string;
   restartable?: boolean;
 };
 
@@ -150,12 +151,13 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
   };
 
   private _startServer(cb: (arg0: ChildProcess) => void): void {
-    const { args, nodeArgs } = this.options;
+    const { args, nodeArgs, cwd } = this.options;
     if (!this._entrypoint) throw new Error('run-script-webpack-plugin requires an entrypoint.');
 
     const child = fork(this._entrypoint, args, {
       execArgv: nodeArgs,
       stdio: 'inherit',
+      cwd,
     });
     setTimeout(() => cb(child), 0);
   }
