@@ -72,7 +72,7 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
       keyboard: process.env.NODE_ENV === 'development',
       ...options,
       args: [...(options.args || [])],
-      nodeArgs: [...process.execArgv, ...(options.nodeArgs || [])],
+      nodeArgs: [...(options.nodeArgs || process.execArgv)],
     };
 
     if (this.options.restartable) {
