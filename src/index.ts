@@ -103,8 +103,6 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
       if (signal) {
         process.kill(this.worker.pid, signal);
       }
-      cb();
-      return;
     }
 
     this.startServer(compilation, cb);
