@@ -42,6 +42,7 @@ export type ProcessKillSignal =
   | 'SIGUNUSED';
 
 export type RunScriptWebpackPluginOptions = {
+  cleanup?: boolean
   name?: string;
   nodeArgs: string[];
   args: string[];
@@ -68,6 +69,7 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
   constructor(options: Partial<RunScriptWebpackPluginOptions> = {}) {
     this.options = {
       signal: false,
+      cleanup: false,
       // Only listen on keyboard in development, so the server doesn't hang forever
       keyboard: process.env.NODE_ENV === 'development',
       ...options,
@@ -103,19 +105,22 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
       if (signal) {
         process.kill(this.worker.pid, signal);
       }
-      cb();
-      return;
     }
 
     this.startServer(compilation, cb);
   };
 
-  apply = (compiler: Compiler): void => {
+  apply(compiler: Compiler): void {
     compiler.hooks.afterEmit.tapAsync(
       { name: 'RunScriptPlugin' },
       this.afterEmit
     );
-  };
+
+    if(this.options.cleanup) {
+      process.on('exit', () => { this._cleanup() });
+      process.on('SIGINT', () => { this._cleanup() });
+    }
+  }
 
   private startServer = (compilation: Compilation, cb: () => void): void => {
     const { assets, compiler } = compilation;
@@ -160,6 +165,41 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
       cwd,
     });
     setTimeout(() => cb(child), 0);
+  }
+
+  private _processExists(pid: number) {
+    try {
+      // Doesn't kill only checks if process id exists
+      process.kill(pid, 0)
+    } catch(e) {
+      return false
+    }
+    return true
+  }
+
+  private _cleanup() {
+    if(this.worker){
+      console.log('\nKilling worker with process id', this.worker.pid)
+      process.kill(this.worker.pid)
+
+      // Due to OS oddities when killing a process and then killing yourself sometimes leaves the 
+      // child process hanging. This loop arbitrary waits for 5 seconds
+
+      let retry = 0
+      const maxRetry = 5 
+      setInterval(() => {
+        if(this.worker == null) { return }
+        if(retry > maxRetry) {
+          console.log('Failed to kill ', this.worker.pid)
+          process.exit()
+        }
+        if(!this._processExists(this.worker.pid)) {
+          delete this.worker 
+          process.exit()        
+        }
+        retry++
+      }, 1000)
+    }
   }
 }
 
