@@ -51,6 +51,11 @@ To use Hot Module Reloading with your server code, set Webpack to "hot" mode and
 
 > Refer to [LICENSE](LICENSE) file
 
+### Contributing
+
+* Use [conventional commmits](https://conventionalcommits.org/)
+* There is a eslint config in the repo. Check if no new errors are added. (dont change the config inside ur PRs)
+
 [npm]: https://img.shields.io/npm/v/run-script-webpack-plugin.svg
 [npm-url]: https://npmjs.com/package/run-script-webpack-plugin
 [node]: https://img.shields.io/node/v/run-script-webpack-plugin.svg
