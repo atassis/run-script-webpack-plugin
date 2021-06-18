@@ -13,7 +13,7 @@ NOTE: mostly copied from [this](https://github.com/ericclemmons/start-server-web
 ### Installation
 
 ```shell
-$ npm i -D run-script-webpack-plugin
+npm i -D run-script-webpack-plugin
 ```
 
 ### Usage
