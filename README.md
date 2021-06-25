@@ -18,7 +18,7 @@ npm i -D run-script-webpack-plugin
 
 ### Usage
 
-In `webpack.config.js`:
+In `webpack.config.ts`:
 
 ```js
 import { RunScriptWebpackPlugin } from "run-script-webpack-plugin";
