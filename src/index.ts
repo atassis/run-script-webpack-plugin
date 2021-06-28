@@ -49,6 +49,7 @@ export type RunScriptWebpackPluginOptions = {
   keyboard: boolean;
   cwd?: string;
   restartable?: boolean;
+  autoRestart?: boolean;
 };
 
 function getSignal(signal: ProcessKillSignal | boolean) {
@@ -68,6 +69,7 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
   constructor(options: Partial<RunScriptWebpackPluginOptions> = {}) {
     this.options = {
       signal: false,
+      autoRestart: false,
       // Only listen on keyboard in development, so the server doesn't hang forever
       keyboard: process.env.NODE_ENV === 'development',
       ...options,
@@ -85,20 +87,29 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
       process.stdin.setEncoding('utf8');
       process.stdin.on('data', (data: string) => {
         if (data.trim() === 'rs') {
-          console.log('Restarting app...');
-          if (this.worker) {
-            process.kill(this.worker.pid);
-          }
-          this._startServer((worker) => {
-            this.worker = worker;
-          });
+          this._restartServer()
         }
       });
     }
   }
 
+  private _restartServer():void {
+    console.log('Restarting app...');
+    if (this.worker) {
+      process.kill(this.worker.pid);
+    }
+    this._startServer((worker) => {
+      this.worker = worker;
+    });
+  }
+
   private afterEmit = (compilation: Compilation, cb: () => void): void => {
     if (this.worker && this.worker.connected) {
+      if (this.options.autoRestart) {
+        this._restartServer();
+        cb();
+        return;
+      }
       const signal = getSignal(this.options.signal);
       if (signal) {
         process.kill(this.worker.pid, signal);
