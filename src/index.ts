@@ -1,64 +1,24 @@
 import { fork, ChildProcess } from 'child_process';
 import { Compiler, WebpackPluginInstance, Compilation } from 'webpack';
 
-export type ProcessKillSignal =
-  | 'SIGHUP'
-  | 'SIGINT'
-  | 'SIGQUIT'
-  | 'SIGILL'
-  | 'SIGABRT'
-  | 'SIGFPE'
-  | 'SIGKILL'
-  | 'SIGSEGV'
-  | 'SIGPIPE'
-  | 'SIGALRM'
-  | 'SIGTERM'
-  | 'SIGUSR1'
-  | 'SIGUSR2'
-  | 'SIGCHLD'
-  | 'SIGCONT'
-  | 'SIGSTOP'
-  | 'SIGTSTP'
-  | 'SIGTTIN'
-  | 'SIGTTOU'
-  | 'SIGBUS'
-  | 'SIGPOLL'
-  | 'SIGPROF'
-  | 'SIGSYS'
-  | 'SIGTRAP'
-  | 'SIGURG'
-  | 'SIGVTALRM'
-  | 'SIGXCPU'
-  | 'SIGXFSZ'
-  | 'SIGIOT'
-  | 'SIGEMT'
-  | 'SIGSTKFLT'
-  | 'SIGIO'
-  | 'SIGCLD'
-  | 'SIGPWR'
-  | 'SIGINFO'
-  | 'SIGLOST'
-  | 'SIGWINCH'
-  | 'SIGUNUSED';
-
 export type RunScriptWebpackPluginOptions = {
   name?: string;
   nodeArgs: string[];
   args: string[];
-  signal: boolean | ProcessKillSignal;
+  signal: boolean | string;
   keyboard: boolean;
   cwd?: string;
   restartable?: boolean;
 };
 
-function getSignal(signal: ProcessKillSignal | boolean) {
+function getSignal(signal: string | boolean) {
   // allow users to disable sending a signal by setting to `false`...
   if (signal === false) return;
   if (signal === true) return 'SIGUSR2';
   return signal;
 }
 
-class RunScriptWebpackPlugin implements WebpackPluginInstance {
+export class RunScriptWebpackPlugin implements WebpackPluginInstance {
   private readonly options: RunScriptWebpackPluginOptions;
 
   private worker?: ChildProcess;
@@ -86,7 +46,7 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
       process.stdin.on('data', (data: string) => {
         if (data.trim() === 'rs') {
           console.log('Restarting app...');
-          if (this.worker) {
+          if (this.worker?.pid) {
             process.kill(this.worker.pid);
           }
           this._startServer((worker) => {
@@ -98,7 +58,7 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
   }
 
   private afterEmit = (compilation: Compilation, cb: () => void): void => {
-    if (this.worker && this.worker.connected) {
+    if (this.worker && this.worker.connected && this.worker?.pid) {
       const signal = getSignal(this.options.signal);
       if (signal) {
         process.kill(this.worker.pid, signal);
@@ -162,5 +122,3 @@ class RunScriptWebpackPlugin implements WebpackPluginInstance {
     setTimeout(() => cb(child), 0);
   }
 }
-
-export { RunScriptWebpackPlugin };
