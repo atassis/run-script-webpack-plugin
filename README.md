@@ -13,12 +13,12 @@ NOTE: mostly copied from [this](https://github.com/ericclemmons/start-server-web
 ### Installation
 
 ```shell
-$ npm i -D run-script-webpack-plugin
+npm i -D run-script-webpack-plugin
 ```
 
 ### Usage
 
-In `webpack.config.js`:
+In `webpack.config.ts`:
 
 ```js
 import { RunScriptWebpackPlugin } from "run-script-webpack-plugin";
@@ -50,6 +50,11 @@ To use Hot Module Reloading with your server code, set Webpack to "hot" mode and
 ### License
 
 > Refer to [LICENSE](LICENSE) file
+
+### Contributing
+
+* Use [conventional commmits](https://conventionalcommits.org/)
+* There is a eslint config in the repo. Check if no new errors are added. (dont change the config inside ur PRs)
 
 [npm]: https://img.shields.io/npm/v/run-script-webpack-plugin.svg
 [npm-url]: https://npmjs.com/package/run-script-webpack-plugin
