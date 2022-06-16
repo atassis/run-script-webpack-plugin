@@ -2,13 +2,14 @@ import { fork, ChildProcess } from 'child_process';
 import { Compiler, WebpackPluginInstance, Compilation } from 'webpack';
 
 export type RunScriptWebpackPluginOptions = {
+  autoRestart?: boolean;
+  args: string[];
+  cwd?: string;
+  keyboard: boolean;
   name?: string;
   nodeArgs: string[];
-  args: string[];
-  signal: boolean | string;
-  keyboard: boolean;
-  cwd?: string;
   restartable?: boolean;
+  signal: boolean | string;
 };
 
 function getSignal(signal: string | boolean) {
@@ -27,6 +28,7 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
 
   constructor(options: Partial<RunScriptWebpackPluginOptions> = {}) {
     this.options = {
+      autoRestart: true,
       signal: false,
       // Only listen on keyboard in development, so the server doesn't hang forever
       keyboard: process.env.NODE_ENV === 'development',
@@ -45,20 +47,29 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
       process.stdin.setEncoding('utf8');
       process.stdin.on('data', (data: string) => {
         if (data.trim() === 'rs') {
-          console.log('Restarting app...');
-          if (this.worker?.pid) {
-            process.kill(this.worker.pid);
-          }
-          this._startServer((worker) => {
-            this.worker = worker;
-          });
+          this._restartServer()
         }
       });
     }
   }
 
+  private _restartServer():void {
+    console.log('Restarting app...');
+    if (this.worker?.pid) {
+      process.kill(this.worker.pid);
+    }
+    this._startServer((worker) => {
+      this.worker = worker;
+    });
+  }
+
   private afterEmit = (compilation: Compilation, cb: () => void): void => {
     if (this.worker && this.worker.connected && this.worker?.pid) {
+      if (this.options.autoRestart) {
+        this._restartServer();
+        cb();
+        return;
+      }
       const signal = getSignal(this.options.signal);
       if (signal) {
         process.kill(this.worker.pid, signal);
