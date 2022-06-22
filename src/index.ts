@@ -56,7 +56,8 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
   private _restartServer():void {
     console.log('Restarting app...');
     if (this.worker?.pid) {
-      process.kill(this.worker.pid);
+      const signal = getSignal(this.options.signal);
+      process.kill(this.worker.pid, signal);
     }
     this._startServer((worker) => {
       this.worker = worker;
