@@ -31,6 +31,7 @@ export default {
       name: 'server.js',
       nodeArgs: ['--inspect'], // allow debugging
       args: ['scriptArgument1', 'scriptArgument2'], // pass args to script
+      autoRestart: true | false, // Should the script auto-restart after emit. Defaults to true. This should be set to false if using HMR
       signal: false | true | 'SIGUSR2', // signal to send for HMR (defaults to `false`, uses 'SIGUSR2' if `true`)
       keyboard: true | false, // Allow typing 'rs' to restart the server. default: only if NODE_ENV is 'development'
       cwd: undefined | string, // set a current working directory for the child process default: current cwd
