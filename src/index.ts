@@ -5,6 +5,7 @@ export type RunScriptWebpackPluginOptions = {
   autoRestart?: boolean;
   args: string[];
   cwd?: string;
+  env?: NodeJS.ProcessEnv | undefined;
   keyboard: boolean;
   name?: string;
   nodeArgs: string[];
@@ -123,13 +124,14 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
   };
 
   private _startServer(cb: (arg0: ChildProcess) => void): void {
-    const { args, nodeArgs, cwd } = this.options;
+    const { args, nodeArgs, cwd, env } = this.options;
     if (!this._entrypoint) throw new Error('run-script-webpack-plugin requires an entrypoint.');
 
     const child = fork(this._entrypoint, args, {
       execArgv: nodeArgs,
       stdio: 'inherit',
       cwd,
+      env,
     });
     setTimeout(() => cb(child), 0);
   }
