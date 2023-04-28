@@ -1,6 +1,6 @@
 {
   "name": "run-script-webpack-plugin",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Automatically run your script once Webpack's build completes.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
