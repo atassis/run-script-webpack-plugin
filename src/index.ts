@@ -5,7 +5,7 @@ export type RunScriptWebpackPluginOptions = {
   autoRestart?: boolean;
   args: string[];
   cwd?: string;
-  env?: NodeJS.ProcessEnv | undefined;
+  env?: NodeJS.ProcessEnv;
   keyboard: boolean;
   name?: string;
   nodeArgs: string[];
