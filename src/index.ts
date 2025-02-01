@@ -1,5 +1,5 @@
-import { fork, ChildProcess } from 'child_process';
-import { Compiler, WebpackPluginInstance, Compilation } from 'webpack';
+import { ChildProcess, fork } from 'child_process';
+import { Compilation, Compiler, WebpackPluginInstance } from 'webpack';
 
 export type RunScriptWebpackPluginOptions = {
   autoRestart?: boolean;
@@ -48,21 +48,18 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
       process.stdin.setEncoding('utf8');
       process.stdin.on('data', (data: string) => {
         if (data.trim() === 'rs') {
-          this._restartServer()
+          this._restartServer();
         }
       });
     }
   }
 
-  private _restartServer():void {
+  private _restartServer(): void {
     console.log('Restarting app...');
-    if (this.worker?.pid) {
-      const signal = getSignal(this.options.signal);
-      process.kill(this.worker.pid, signal);
-    }
-    this._startServer((worker) => {
-      this.worker = worker;
-    });
+
+    this._stopServer();
+
+    this._startServer();
   }
 
   private afterEmit = (compilation: Compilation, cb: () => void): void => {
@@ -72,10 +69,7 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
         cb();
         return;
       }
-      const signal = getSignal(this.options.signal);
-      if (signal) {
-        process.kill(this.worker.pid, signal);
-      }
+      this._stopServer();
       cb();
       return;
     }
@@ -86,7 +80,7 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
   apply = (compiler: Compiler): void => {
     compiler.hooks.afterEmit.tapAsync(
       { name: 'RunScriptPlugin' },
-      this.afterEmit
+      this.afterEmit,
     );
   };
 
@@ -99,7 +93,7 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
       name = options.name;
       if (!assets[name]) {
         console.error(
-          `Entry ${name} not found. Try one of: ${names.join(' ')}`
+          `Entry ${name} not found. Try one of: ${names.join(' ')}`,
         );
       }
     } else {
@@ -107,8 +101,8 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
       if (names.length > 1) {
         console.log(
           `More than one entry built, selected ${name}. All names: ${names.join(
-            ' '
-          )}`
+            ' ',
+          )}`,
         );
       }
     }
@@ -117,13 +111,10 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
     }
 
     this._entrypoint = `${compiler.options.output.path}/${name}`;
-    this._startServer((worker) => {
-      this.worker = worker;
-      cb();
-    });
+    this._startServer(cb);
   };
 
-  private _startServer(cb: (arg0: ChildProcess) => void): void {
+  private _startServer(cb?: () => void): void {
     const { args, nodeArgs, cwd, env } = this.options;
     if (!this._entrypoint) throw new Error('run-script-webpack-plugin requires an entrypoint.');
 
@@ -133,6 +124,17 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
       cwd,
       env,
     });
-    setTimeout(() => cb(child), 0);
+
+    setTimeout(() => {
+      this.worker = child;
+      cb?.()
+    }, 0);
   }
+
+  private _stopServer() {
+    const signal = getSignal(this.options.signal);
+    if (signal && (this.worker?.pid)) {
+      process.kill(this.worker.pid, signal);
+    }
+  };
 }
