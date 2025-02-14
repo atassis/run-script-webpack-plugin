@@ -133,7 +133,7 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
 
   private _stopServer() {
     const signal = getSignal(this.options.signal);
-    if (signal && (this.worker?.pid)) {
+    if (this.worker?.pid) {
       process.kill(this.worker.pid, signal);
     }
   };
