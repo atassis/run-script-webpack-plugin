@@ -43,38 +43,36 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
     }
   }
 
-  private _enableRestarting(): void {
-    if (this.options.keyboard) {
-      process.stdin.setEncoding('utf8');
-      process.stdin.on('data', (data: string) => {
-        if (data.trim() === 'rs') {
-          this._restartServer();
-        }
-      });
-    }
-  }
-
-  private _restartServer(): void {
+  public restartServer(): void {
     console.log('Restarting app...');
 
-    this._stopServer();
+    this.stopServer();
 
-    this._startServer();
+    this.startServer();
   }
 
-  private afterEmit = (compilation: Compilation, cb: () => void): void => {
-    if (this.worker && this.worker.connected && this.worker?.pid) {
-      if (this.options.autoRestart) {
-        this._restartServer();
-        cb();
-        return;
-      }
-      this._stopServer();
-      cb();
-      return;
-    }
+  public startServer(cb?: () => void): void {
+    const { args, nodeArgs, cwd, env } = this.options;
+    if (!this._entrypoint) throw new Error('run-script-webpack-plugin requires an entrypoint.');
 
-    this.startServer(compilation, cb);
+    const child = fork(this._entrypoint, args, {
+      execArgv: nodeArgs,
+      stdio: 'inherit',
+      cwd,
+      env,
+    });
+
+    setTimeout(() => {
+      this.worker = child;
+      cb?.();
+    }, 0);
+  }
+
+  public stopServer() {
+    const signal = getSignal(this.options.signal);
+    if (this.worker?.pid) {
+      process.kill(this.worker.pid, signal);
+    }
   };
 
   apply = (compiler: Compiler): void => {
@@ -84,7 +82,33 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
     );
   };
 
-  private startServer = (compilation: Compilation, cb: () => void): void => {
+  private _enableRestarting(): void {
+    if (this.options.keyboard) {
+      process.stdin.setEncoding('utf8');
+      process.stdin.on('data', (data: string) => {
+        if (data.trim() === 'rs') {
+          this.restartServer();
+        }
+      });
+    }
+  }
+
+  private afterEmit = (compilation: Compilation, cb: () => void): void => {
+    if (this.worker && this.worker.connected && this.worker?.pid) {
+      if (this.options.autoRestart) {
+        this.restartServer();
+        cb();
+        return;
+      }
+      this.stopServer();
+      cb();
+      return;
+    }
+
+    this._startServer(compilation, cb);
+  };
+
+  private _startServer = (compilation: Compilation, cb: () => void): void => {
     const { assets, compiler } = compilation;
     const { options } = this;
     let name;
@@ -100,9 +124,7 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
       name = names[0];
       if (names.length > 1) {
         console.log(
-          `More than one entry built, selected ${name}. All names: ${names.join(
-            ' ',
-          )}`,
+          `More than one entry built, selected ${name}. All names: ${names.join(' ')}`,
         );
       }
     }
@@ -111,30 +133,6 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
     }
 
     this._entrypoint = `${compiler.options.output.path}/${name}`;
-    this._startServer(cb);
-  };
-
-  private _startServer(cb?: () => void): void {
-    const { args, nodeArgs, cwd, env } = this.options;
-    if (!this._entrypoint) throw new Error('run-script-webpack-plugin requires an entrypoint.');
-
-    const child = fork(this._entrypoint, args, {
-      execArgv: nodeArgs,
-      stdio: 'inherit',
-      cwd,
-      env,
-    });
-
-    setTimeout(() => {
-      this.worker = child;
-      cb?.()
-    }, 0);
-  }
-
-  private _stopServer() {
-    const signal = getSignal(this.options.signal);
-    if (this.worker?.pid) {
-      process.kill(this.worker.pid, signal);
-    }
+    this.startServer(cb);
   };
 }
