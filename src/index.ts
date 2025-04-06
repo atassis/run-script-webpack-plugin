@@ -69,7 +69,7 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
         cb();
         return;
       }
-      this._stopServer();
+
       cb();
       return;
     }
