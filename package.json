@@ -33,7 +33,7 @@
   },
   "homepage": "https://github.com/atassis/run-script-webpack-plugin#readme",
   "devDependencies": {
-    "@types/node": "^16.11.33",
+    "@types/node": "^24.0.10",
     "@typescript-eslint/eslint-plugin": "^5.23.0",
     "@typescript-eslint/parser": "^5.23.0",
     "eslint": "^8.15.0",
