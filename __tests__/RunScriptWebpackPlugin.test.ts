@@ -156,7 +156,7 @@ describe('RunScriptWebpackPlugin', () => {
   });
 
   it('should NOT restart server if autoRestart is false', () => {
-    const plugin = new RunScriptWebpackPlugin({ name: 'main.js' });
+    const plugin = new RunScriptWebpackPlugin({ name: 'main.js', autoRestart: false });
     plugin.apply(compiler);
 
     const tapAsyncMock = compiler.hooks.afterEmit.tapAsync as jest.Mock;
