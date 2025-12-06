@@ -10,13 +10,13 @@
  
 NOTE: mostly copied from [this](https://github.com/ericclemmons/start-server-webpack-plugin) repo, but strongly typed from scratch
 
-### Installation
+## Installation
 
 ```shell
 npm i -D run-script-webpack-plugin
 ```
 
-### Usage
+## Usage
 
 In `webpack.config.ts`:
 
@@ -48,11 +48,11 @@ You can use `nodeArgs` and `args` to pass arguments to node and your script, res
 
 To use Hot Module Reloading with your server code, set Webpack to "hot" mode and include the `webpack/hot/poll` or `webpack/hot/signal` modules. Make sure they are part of your server bundle, e.g. if you are using `node-externals` put them in your whitelist. The latter module requires the `signal` option.
 
-### License
+## License
 
 > Refer to [LICENSE](LICENSE) file
 
-### Contributing
+## Contributing
 
 * Use [conventional commmits](https://conventionalcommits.org/)
 * There is a eslint config in the repo. Check if no new errors are added. (dont change the config inside ur PRs)
