@@ -381,8 +381,19 @@ describe('RunScriptWebpackPlugin', () => {
     const doneCallback = jest.fn();
     callback(compilation, doneCallback);
 
+    // Verify warning is logged so users know which entry was auto-selected
     expect(consoleLogSpy).toHaveBeenCalledWith(
       expect.stringContaining('More than one entry built')
+    );
+    expect(consoleLogSpy).toHaveBeenCalledWith(
+      expect.stringContaining('main.js')
+    );
+
+    // Verify the first asset is correctly selected and executed
+    expect(mockFork).toHaveBeenCalledWith(
+      '/dist/main.js',
+      [],
+      expect.anything()
     );
   });
 
@@ -501,21 +512,16 @@ describe('RunScriptWebpackPlugin', () => {
     });
   });
 
-  describe('keyboard option defaults', () => {
+  describe('keyboard option defaults based on NODE_ENV', () => {
     const originalNodeEnv = process.env.NODE_ENV;
+    let stdinOnSpy: jest.Mock;
+    let stdinSetEncodingSpy: jest.Mock;
+    let originalStdin: typeof process.stdin;
 
-    afterEach(() => {
-      process.env.NODE_ENV = originalNodeEnv;
-    });
-
-    it('should default keyboard to true when NODE_ENV is development', () => {
-      process.env.NODE_ENV = 'development';
-
-      // We need to re-import to pick up the new NODE_ENV
-      // Instead, we test that restartable triggers keyboard behavior when NODE_ENV is development
-      const stdinOnSpy = jest.fn();
-      const stdinSetEncodingSpy = jest.fn();
-      const originalStdin = process.stdin;
+    beforeEach(() => {
+      stdinOnSpy = jest.fn();
+      stdinSetEncodingSpy = jest.fn();
+      originalStdin = process.stdin;
 
       Object.defineProperty(process, 'stdin', {
         value: {
@@ -525,28 +531,59 @@ describe('RunScriptWebpackPlugin', () => {
         configurable: true,
       });
 
-      // Create plugin with restartable but NOT specifying keyboard
-      // In development, keyboard should default to true
-      const { RunScriptWebpackPlugin: FreshPlugin } = jest.requireActual('../src/index') as { RunScriptWebpackPlugin: typeof RunScriptWebpackPlugin };
+      // Reset module cache to pick up new NODE_ENV
+      jest.resetModules();
+    });
 
-      // Since we can't easily re-evaluate the default, we test the documented behavior
-      // The keyboard option defaults based on NODE_ENV at instantiation time
-
+    afterEach(() => {
+      process.env.NODE_ENV = originalNodeEnv;
       Object.defineProperty(process, 'stdin', {
         value: originalStdin,
         configurable: true,
       });
     });
+
+    it('should enable keyboard by default when NODE_ENV is development and restartable is true', () => {
+      // This tests the documented behavior: keyboard defaults to true in development
+      // This is important because users expect 'rs' to work without explicit config
+      process.env.NODE_ENV = 'development';
+
+      // Fresh import with new NODE_ENV
+      const { RunScriptWebpackPlugin: FreshPlugin } = require('../src/index');
+
+      const plugin = new FreshPlugin({ restartable: true });
+      plugin.apply(compiler);
+
+      expect(stdinSetEncodingSpy).toHaveBeenCalledWith('utf8');
+      expect(stdinOnSpy).toHaveBeenCalledWith('data', expect.any(Function));
+    });
+
+    it('should NOT enable keyboard by default when NODE_ENV is production', () => {
+      // In production, keyboard should default to false to prevent
+      // the server from hanging on stdin, which would cause issues in containers
+      process.env.NODE_ENV = 'production';
+
+      const { RunScriptWebpackPlugin: FreshPlugin } = require('../src/index');
+
+      const plugin = new FreshPlugin({ restartable: true });
+      plugin.apply(compiler);
+
+      expect(stdinSetEncodingSpy).not.toHaveBeenCalled();
+      expect(stdinOnSpy).not.toHaveBeenCalled();
+    });
   });
 
-  it('should handle restart when worker has no pid', () => {
+  it('should gracefully handle restart when worker process has no pid (defensive edge case)', () => {
+    // This tests graceful degradation when the forked process doesn't have a pid.
+    // While rare, this can happen if the process exits immediately or in mocked environments.
+    // The plugin should NOT throw and should continue working.
     const plugin = new RunScriptWebpackPlugin({ name: 'main.js' });
     plugin.apply(compiler);
 
     const tapAsyncMock = compiler.hooks.afterEmit.tapAsync as jest.Mock;
     const callback = tapAsyncMock.mock.calls[0][1];
 
-    // Mock fork to return a worker without pid
+    // Simulate a worker that was created but has undefined pid
     mockFork.mockReturnValue({
       pid: undefined,
       connected: true,
@@ -556,11 +593,12 @@ describe('RunScriptWebpackPlugin', () => {
 
     const doneCallback = jest.fn();
 
-    // First run
+    // First run - starts server with undefined pid
     callback(compilation, doneCallback);
     jest.runAllTimers();
+    expect(doneCallback).toHaveBeenCalledTimes(1);
 
-    // Mock now returns with pid after first start
+    // Mock now returns healthy worker
     mockFork.mockReturnValue({
       pid: 456,
       connected: true,
@@ -568,11 +606,11 @@ describe('RunScriptWebpackPlugin', () => {
       on: jest.fn()
     });
 
-    // Second run - should try to restart but worker.pid was undefined
-    callback(compilation, doneCallback);
+    // Second run - should not crash when trying to kill worker with undefined pid
+    expect(() => callback(compilation, doneCallback)).not.toThrow();
+    expect(process.kill).not.toHaveBeenCalled(); // Can't kill undefined pid
 
-    // process.kill should not be called because pid was undefined
-    expect(process.kill).not.toHaveBeenCalled();
     jest.runAllTimers();
+    expect(doneCallback).toHaveBeenCalledTimes(2); // Callback still called - no hang
   });
 });
