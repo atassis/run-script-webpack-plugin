@@ -64,6 +64,13 @@ export class RunScriptWebpackPlugin implements WebpackPluginInstance {
 
   private afterEmit = (compilation: Compilation, cb: () => void): void => {
     if (this.worker && this.worker.connected && this.worker?.pid) {
+      const signal = getSignal(this.options.signal);
+      if (signal) {
+        process.kill(this.worker.pid, signal);
+        cb();
+        return;
+      }
+
       if (this.options.autoRestart) {
         this._restartServer();
         cb();
