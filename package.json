@@ -39,7 +39,7 @@
     "@eslint/json": "^2.0.1",
     "@eslint/markdown": "^8.0.1",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.0.6",
+    "@types/node": "^26.2.0",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.5",
     "globals": "^17.0.0",
